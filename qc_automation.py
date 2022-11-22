@@ -3,7 +3,6 @@
 import pandas as pd
 import re
 from Config import *
-import dateutil.parser
 from datetime import datetime
 import datetime
 import os
@@ -26,8 +25,10 @@ if not df.columns.tolist() == ['is_paid','source_id', 'manual_id', 'article_titl
     to_write.close()
     sys.exit("row header is wrong")
 
-df = df.astype(str)
 
+
+df = df.astype(str)
+is_paid = df['is_paid'].tolist()
 source_id = df['source_id'].tolist()
 manual_id = df['manual_id'].tolist()
 url = df['url'].tolist()
@@ -95,11 +96,14 @@ def mid_format(res):
         ct = 1
         for data in res[key]:
             ct += 1
-            temp_data = re.search('(([A-Za-z]+_)+\d+)',data).group(1)
-            
-            if not data == temp_data:
-                msg += f'{key} ============>  Bad format   {temp_data} ================>Row no. {ct}\n'
-            
+            try:
+                temp_data = re.search('(([A-Za-z]+_)+\d+)',data).group(1)
+                
+                if not data == temp_data:
+                    msg += f'{key} ============>  Bad format   {temp_data} ================>Row no. {ct}\n'
+            except:
+                msg += f'{key} ============>  Bad format   {data} ================>Row no. {ct}\n'
+
             
     return f'{msg}\n\n'
 
@@ -244,15 +248,37 @@ def start_end_time_les_0_6(res):
             ct += 1
             if not data:
                 continue
-            
-            temp_data = data.replace(' ','').replace(':','').strip()
-            if int(temp_data) <= 700:
-                msg += f'{key} ============>    this early time not possible {data}   ===========>   Row no. {ct}\n'
-
+            try:
+                temp_data = data.replace(' ','').replace(':','').strip()
+                if int(temp_data) <= 700:
+                    msg += f'{key} ============>    this early time not possible {data}   ===========>   Row no. {ct}\n'
+            except:
+                continue
                         
     return f'{msg}\n\n'      
 
 temp_msg = (start_end_time_les_0_6({'start_time':start_time,'end_time':end_time}))
+paitron_msg += temp_msg
+to_write.write(temp_msg)
+
+def is_paid_wrong_data(res):
+    msg = '############################   Wrong data in is_paid   ##############################\n\n'
+
+    for key in res:
+        
+        ct = 1
+        for data in res[key]:
+            ct += 1
+            if data=='No' or data=="Yes":
+                continue
+
+            else:
+                msg += f'{key} ============>    Wrong data in is_paid {data}   ===========>   Row no. {ct}\n'
+
+        return f'{msg}\n\n'
+    
+
+temp_msg = is_paid_wrong_data({'is_pad':is_paid})
 paitron_msg += temp_msg
 to_write.write(temp_msg)
 
@@ -266,11 +292,13 @@ def start_end_time_morethan_2330(res):
             ct += 1
             if not data:
                 continue
-            
-            temp_data = data.replace(' ','').replace(':','').strip()
-            if int(temp_data) >= 2330:
-                msg += f'{key} ============>    this late time not possible {data}   ===========>   Row no. {ct}\n'
+            try:
 
+                temp_data = data.replace(' ','').replace(':','').strip()
+                if int(temp_data) >= 2330:
+                    msg += f'{key} ============>    this late time not possible {data}   ===========>   Row no. {ct}\n'
+            except:
+                continue
                         
     return f'{msg}\n\n'      
 
@@ -297,6 +325,26 @@ paitron_msg += temp_msg
 to_write.write(temp_msg)
 
 
+def start_time_end_time(res):
+    msg = '##############################   start_time end_time is same   ##################################\n\n'
+
+    ct = 1
+    for x in range(len(res['start_time'])):
+        ct += 1
+        if res['start_time'][x]== '':
+            continue
+
+        if res['start_time'][x] == res['end_time'][x]:
+                msg += f'end_time ============>   start_time end_time is same    ===========>   Row no. {ct}\n'
+                
+                        
+    return f'{msg}\n\n'      
+
+temp_msg = (start_time_end_time({'start_time':start_time,'end_time':end_time}))
+paitron_msg += temp_msg
+to_write.write(temp_msg)
+
+
 
 if '' in manual_id:
     temp_msg = '=================>  vacant cell found in manual_id column  <=================\n\n'
@@ -311,7 +359,9 @@ if '' in article_title:
     temp_msg = '=================>  vacant cell found in article_title column   <=================\n\n'
     to_write.write(temp_msg)
 
-
+if '' in is_paid:
+    temp_msg = '=================>  vacant cell found in is_paid column   <=================\n\n'
+    to_write.write(temp_msg)
 
 manual_id_to_b_unique = df["source_id"].tolist()
 source_id_to_b_unique = df["manual_id"].tolist()
