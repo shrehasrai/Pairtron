@@ -19,7 +19,8 @@ if os.path.exists(f'{source_file}.txt'):
 
 to_write = open(f'{source_file}.txt','a')
 
-if not df.columns.tolist() == ['is_paid','source_id', 'manual_id', 'article_title', 'url', 'authors', 'author_affiliation', 'abstract_text', 'date', 'start_time', 'end_time', 'location', 'session_title', 'session_type', 'category', 'sub_category', 'disclosure']:
+if not df.columns.tolist() == ['is_paid','source_id', 'manual_id', 'article_title', 'url', 'authors', 'author_affiliation', 'abstract_text', 'date', 'start_time', 'end_time', 'location', 'session_id', 'news_type',
+'session_title', 'session_type', 'category', 'sub_category', 'disclosure']:
     print('hi there')
     to_write.write('#########################################################################\n\n row header is wrong \n\n#########################################################################')
     to_write.close()
@@ -45,6 +46,9 @@ session_type = df['session_type'].tolist()
 category = df['category'].tolist()
 sub_category = df['sub_category'].tolist()
 disclosure = df['disclosure'].tolist()
+session_id = df['session_id'].tolist()
+news_type = df['news_type'].tolist()
+
 
 res = {'source_id':source_id,
 'manual_id': manual_id,
@@ -58,6 +62,8 @@ res = {'source_id':source_id,
 'end_time':end_time,
 'location':location,
 'session_title':session_title,
+'session_id':session_id,
+'news_type':news_type,
 'session_type':session_type,
 'category':category,
 'sub_category':sub_category,
@@ -239,7 +245,7 @@ to_write.write(temp_msg)
 
 
 def start_end_time_les_0_6(res):
-    msg = '##############################   time ( 7 =<time >= 0 )   ##################################\n\n'
+    msg = '##############################   time ( 7 =< time >= 0 )   ##################################\n\n'
     
     for key in res:
         
@@ -308,7 +314,7 @@ to_write.write(temp_msg)
 
 
 def invalid_end_time(res):
-    msg = '##############################   start_time is blank but_end time is there   ##################################\n\n'
+    msg = '##############################   start_time is blank but end_time is there   ##################################\n\n'
 
     ct = 1
     for x in range(len(res['start_time'])):
@@ -343,6 +349,46 @@ def start_time_end_time(res):
 temp_msg = (start_time_end_time({'start_time':start_time,'end_time':end_time}))
 paitron_msg += temp_msg
 to_write.write(temp_msg)
+
+
+def session_id_format(res):
+    msg = '##############################   invalid session id format   ##################################\n\n'
+
+    ct = 1
+    for x in range(len(res['session_id'])):
+        ct += 1
+        if res['session_id'][x]== '':
+            continue
+        
+        if not re.search('^S\d+$',res['session_id'][x],flags=re.S):
+                msg += f'session_id ============>   invalid session id format {res["session_id"][x]}  ===========>   Row no. {ct}\n'
+                
+                        
+    return f'{msg}\n\n'      
+
+temp_msg = (session_id_format({'session_id':session_id}))
+paitron_msg += temp_msg
+to_write.write(temp_msg)
+
+def news_type_format(res):
+    msg = '##############################   invalid news_type format   ##################################\n\n'
+
+    ct = 1
+    for x in range(len(res['news_type'])):
+        ct += 1
+        if res['news_type'][x]== '':
+            continue
+        
+        if not re.search('^Session$|^Abstract$',res['news_type'][x],flags=re.S):
+                msg += f'news_type ============>   invalid news_type format {res["news_type"][x]}  ===========>   Row no. {ct}\n'
+                
+                        
+    return f'{msg}\n\n'      
+
+temp_msg = (news_type_format({'news_type':news_type}))
+paitron_msg += temp_msg
+to_write.write(temp_msg)
+
 
 
 
